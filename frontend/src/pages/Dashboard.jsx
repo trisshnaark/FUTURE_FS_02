@@ -21,7 +21,7 @@ function Dashboard() {
   const updateStatus = async (id, status) => {
 
     await axios.put(
-      `http://localhost:5001/api/leads/${id}`,
+      `http://localhost:5002/api/leads/${id}`,
       { status }
     );
 

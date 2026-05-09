@@ -35,8 +35,9 @@ function Contact() {
     setSuccess(false);
 
     try {
-      const response = await axios.post("http://localhost:5001/api/leads", form);
-      console.log("Lead submitted successfully:", response.data);
+      const response = await axios.post("http://localhost:5002/api/leads", form);
+      console.log("✅ Lead submitted successfully:", response.data);
+      console.log("Form data sent:", form);
       setSuccess(true);
       setError("");
       
@@ -50,7 +51,8 @@ function Contact() {
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      console.error("Error details:", err.response?.data || err.message);
+      console.error("❌ Error details:", err.response?.data || err.message);
+      console.error("Request was:", form);
       setError(err.response?.data?.message || err.response?.data?.error || "❌ Failed to submit lead. Please try again.");
       setSuccess(false);
     } finally {

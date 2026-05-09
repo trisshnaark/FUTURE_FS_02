@@ -4,14 +4,33 @@ const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// DEBUG: Get All Leads (No Auth - for testing only)
+router.get("/debug/all", (req, res) => {
+  const query = "SELECT * FROM leads";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("❌ Database Select Error:", err.message);
+      return res.status(500).json({ message: "Database error", error: err.message });
+    }
+    console.log(`📊 DEBUG: Fetched ${results.length} leads (no auth)`);
+    res.json({ 
+      debug: true,
+      total: results.length, 
+      leads: results 
+    });
+  });
+});
+
 // Get All Leads (Protected)
 router.get("/", authMiddleware, (req, res) => {
   const query = "SELECT * FROM leads ORDER BY created_at DESC";
   db.query(query, (err, results) => {
     if (err) {
+      console.error("❌ Database Select Error:", err.message);
       return res.status(500).json({ message: "Database error", error: err });
     }
-    res.json({ leads: results });
+    console.log(`📊 Fetched ${results.length} leads`);
+    res.json(results);
   });
 });
 
@@ -25,13 +44,15 @@ router.get("/:id", authMiddleware, (req, res) => {
     if (results.length === 0) {
       return res.status(404).json({ message: "Lead not found" });
     }
-    res.json({ lead: results[0] });
+    res.json(results[0]);
   });
 });
 
 // Create New Lead
 router.post("/", (req, res) => {
   const { name, email, phone, source, notes } = req.body;
+
+  console.log("📝 Lead submission received:", { name, email, phone, source, notes });
 
   if (!name || !email) {
     return res.status(400).json({ message: "Name and email are required" });
@@ -41,11 +62,14 @@ router.post("/", (req, res) => {
     "INSERT INTO leads (name, email, phone, source, notes, status) VALUES (?, ?, ?, ?, ?, ?)";
   db.query(
     query,
-    [name, email, phone || null, source || "Website", notes || "", "New"],
+    [name, email, phone || null, source || "Website", notes || "", "new"],
     (err, result) => {
       if (err) {
-        return res.status(500).json({ message: "Database error", error: err });
+        console.error("❌ Database Insert Error:", err.message);
+        console.error("Error Code:", err.code);
+        return res.status(500).json({ message: "Database error", error: err.message });
       }
+      console.log("✅ Lead inserted successfully with ID:", result.insertId);
       res.status(201).json({
         message: "Lead created successfully",
         lead: {
@@ -55,7 +79,7 @@ router.post("/", (req, res) => {
           phone,
           source,
           notes,
-          status: "New",
+          status: "new",
         },
       });
     }

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { ArrowLeft, Edit2, Trash2, Check } from "lucide-react";
+import { ArrowLeft, Edit2, Trash2, Check, RefreshCw } from "lucide-react";
 
 function AdminLeads() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -17,10 +18,12 @@ function AdminLeads() {
   const fetchLeads = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await axios.get("http://localhost:5001/api/leads", {
+      const res = await axios.get("http://localhost:5002/api/leads", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setLeads(res.data);
+      // Ensure res.data is an array
+      const leadsData = Array.isArray(res.data) ? res.data : (res.data.leads || []);
+      setLeads(leadsData);
     } catch (err) {
       console.error("Error fetching leads:", err);
       if (err.response?.status === 401) {
@@ -29,6 +32,7 @@ function AdminLeads() {
       }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -36,7 +40,7 @@ function AdminLeads() {
     try {
       const token = localStorage.getItem("adminToken");
       await axios.put(
-        `http://localhost:5001/api/leads/${id}`,
+        `http://localhost:5002/api/leads/${id}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -52,7 +56,7 @@ function AdminLeads() {
     if (window.confirm("Are you sure you want to delete this lead?")) {
       try {
         const token = localStorage.getItem("adminToken");
-        await axios.delete(`http://localhost:5001/api/leads/${id}`, {
+        await axios.delete(`http://localhost:5002/api/leads/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         fetchLeads();
@@ -62,6 +66,11 @@ function AdminLeads() {
         alert("❌ Failed to delete lead");
       }
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchLeads();
   };
 
   const filteredLeads = leads.filter((lead) => {
@@ -89,13 +98,23 @@ function AdminLeads() {
       <nav className="bg-white shadow-md p-4 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-indigo-600">Manage Leads</h1>
-          <button
-            onClick={() => navigate("/admin/dashboard")}
-            className="inline-flex items-center gap-2 text-gray-700 hover:text-indigo-600 font-medium"
-          >
-            <ArrowLeft size={20} />
-            Back to Dashboard
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
+            >
+              <RefreshCw size={20} className={refreshing ? "animate-spin" : ""} />
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+            <button
+              onClick={() => navigate("/admin/dashboard")}
+              className="inline-flex items-center gap-2 text-gray-700 hover:text-indigo-600 font-medium"
+            >
+              <ArrowLeft size={20} />
+              Back to Dashboard
+            </button>
+          </div>
         </div>
       </nav>
 

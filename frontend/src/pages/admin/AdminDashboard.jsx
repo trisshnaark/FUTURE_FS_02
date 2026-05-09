@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Users, CheckCircle, TrendingUp, LogOut } from "lucide-react";
+import { Users, CheckCircle, TrendingUp, LogOut, RefreshCw } from "lucide-react";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -12,6 +12,7 @@ function AdminDashboard() {
     pending: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchLeads();
@@ -20,17 +21,21 @@ function AdminDashboard() {
   const fetchLeads = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await axios.get("http://localhost:5001/api/leads", {
+      const res = await axios.get("http://localhost:5002/api/leads", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setLeads(res.data);
+      console.log("Leads fetched:", res.data);
+      
+      // Ensure res.data is an array
+      const leadsData = Array.isArray(res.data) ? res.data : (res.data.leads || []);
+      setLeads(leadsData);
 
-      const converted = res.data.filter((l) => l.status === "converted").length;
-      const pending = res.data.filter((l) => l.status === "new").length;
+      const converted = leadsData.filter((l) => l.status === "converted").length;
+      const pending = leadsData.filter((l) => l.status === "new").length;
 
       setStats({
-        total: res.data.length,
+        total: leadsData.length,
         converted: converted,
         pending: pending,
       });
@@ -42,12 +47,29 @@ function AdminDashboard() {
       }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     navigate("/");
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchLeads();
+  };
+
+  const handleDebugCheck = async () => {
+    try {
+      const res = await axios.get("http://localhost:5002/api/leads/debug/all");
+      console.log("🔍 DEBUG: Leads in database:", res.data);
+      alert(`📊 Database has ${res.data.total} leads:\n\n${JSON.stringify(res.data.leads, null, 2)}`);
+    } catch (err) {
+      console.error("Debug check error:", err);
+      alert("❌ Debug check failed: " + err.message);
+    }
   };
 
   if (loading) {
@@ -67,13 +89,30 @@ function AdminDashboard() {
       <nav className="bg-white shadow-md p-4 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-indigo-600">LeadFlow CRM Admin</h1>
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium"
-          >
-            <LogOut size={20} />
-            Logout
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleDebugCheck}
+              className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 font-medium text-sm"
+              title="Check database directly"
+            >
+              🔍 Debug DB
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
+            >
+              <RefreshCw size={20} className={refreshing ? "animate-spin" : ""} />
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium"
+            >
+              <LogOut size={20} />
+              Logout
+            </button>
+          </div>
         </div>
       </nav>
 
