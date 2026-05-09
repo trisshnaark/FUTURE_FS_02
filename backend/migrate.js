@@ -88,12 +88,48 @@ function runMigration() {
             process.exit(1);
           }
           console.log("✅ 'notes' column added successfully");
-          completeMigration();
+          checkDateColumns();
         });
       } else {
         console.log("✓ 'notes' column already exists");
-        completeMigration();
+        checkDateColumns();
       }
+    });
+  }
+
+  function checkDateColumns() {
+    const query = `
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'leads' 
+      AND COLUMN_NAME IN ('created_at', 'updated_at')
+      AND TABLE_SCHEMA = ?
+    `;
+
+    db.query(query, [process.env.MYSQL_DATABASE || "crm"], (err, results) => {
+      if (err) {
+        console.error("❌ Error checking date columns:", err.message);
+        db.end();
+        process.exit(1);
+      }
+
+      const existingColumns = results.map(r => r.COLUMN_NAME);
+      
+      if (!existingColumns.includes('created_at')) {
+        console.log("➕ Adding 'created_at' column...");
+        db.query("ALTER TABLE leads ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP", (err) => {
+          if (err) console.error("Error adding created_at:", err.message);
+        });
+      }
+
+      if (!existingColumns.includes('updated_at')) {
+        console.log("➕ Adding 'updated_at' column...");
+        db.query("ALTER TABLE leads ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP", (err) => {
+          if (err) console.error("Error adding updated_at:", err.message);
+        });
+      }
+
+      completeMigration();
     });
   }
 

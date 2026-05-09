@@ -27,17 +27,25 @@ function AdminDashboard() {
 
       console.log("Leads fetched:", res.data);
       
-      // Ensure res.data is an array
-      const leadsData = Array.isArray(res.data) ? res.data : (res.data.leads || []);
+      // Ensure res.data is an array or contains a leads array
+      const leadsData = Array.isArray(res.data) ? res.data : (res.data.leads || res.data.data || []);
       setLeads(leadsData);
 
-      const converted = leadsData.filter((l) => l.status === "converted").length;
-      const pending = leadsData.filter((l) => l.status === "new").length;
+      // Case-insensitive status filtering (handles "new", "New", "converted", "Converted")
+      const converted = leadsData.filter((l) => l.status?.toLowerCase() === "converted").length;
+      const pending = leadsData.filter((l) => l.status?.toLowerCase() === "new" || l.status?.toLowerCase() === "pending").length;
 
       setStats({
         total: leadsData.length,
         converted: converted,
         pending: pending,
+      });
+      
+      console.log("✅ Dashboard Stats Processed:", {
+        total: leadsData.length,
+        converted,
+        pending,
+        sampleLead: leadsData[0]
       });
     } catch (err) {
       console.error("Error fetching leads:", err);

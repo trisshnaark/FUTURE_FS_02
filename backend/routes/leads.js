@@ -136,9 +136,9 @@ router.get("/stats/overview", authMiddleware, (req, res) => {
   const query = `
     SELECT 
       COUNT(*) as total_leads,
-      SUM(CASE WHEN status = 'New' THEN 1 ELSE 0 END) as new_leads,
-      SUM(CASE WHEN status = 'Contacted' THEN 1 ELSE 0 END) as contacted_leads,
-      SUM(CASE WHEN status = 'Converted' THEN 1 ELSE 0 END) as converted_leads
+      SUM(CASE WHEN LOWER(status) = 'new' THEN 1 ELSE 0 END) as new_leads,
+      SUM(CASE WHEN LOWER(status) = 'contacted' THEN 1 ELSE 0 END) as contacted_leads,
+      SUM(CASE WHEN LOWER(status) = 'converted' THEN 1 ELSE 0 END) as converted_leads
     FROM leads
   `;
 
