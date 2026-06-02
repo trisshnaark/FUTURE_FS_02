@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ArrowLeft, Send } from "lucide-react";
+import API_BASE_URL from "../api";
 
 function Contact() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ function Contact() {
     setSuccess(false);
 
     try {
-      const response = await axios.post("http://localhost:5002/api/leads", form);
+      const response = await axios.post(`${API_BASE_URL}/leads`, form);
       console.log("✅ Lead submitted successfully:", response.data);
       console.log("Form data sent:", form);
       setSuccess(true);

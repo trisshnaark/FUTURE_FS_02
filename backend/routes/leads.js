@@ -91,7 +91,28 @@ router.put("/:id", authMiddleware, (req, res) => {
   const { name, email, phone, source, status, notes } = req.body;
   const { id } = req.params;
 
+  console.log(`[UPDATE REQUEST] ID: ${id}, Body:`, req.body);
+
+  // If we only have status, we can do a simpler update
+  if (status && !name && !email) {
+    console.log(`[PARTIAL UPDATE] Updating only status to: ${status}`);
+    const query = "UPDATE leads SET status = ?, updated_at = NOW() WHERE id = ?";
+    db.query(query, [status, id], (err, result) => {
+      if (err) {
+        console.error("❌ Database Update Error:", err.message);
+        return res.status(500).json({ message: "Database error", error: err });
+      }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      console.log(`✅ Lead ${id} status updated to ${status}`);
+      return res.json({ message: "Lead status updated successfully" });
+    });
+    return;
+  }
+
   if (!name || !email) {
+    console.log("[UPDATE REJECTED] Name and email are required for full update");
     return res.status(400).json({ message: "Name and email are required" });
   }
 
@@ -102,11 +123,13 @@ router.put("/:id", authMiddleware, (req, res) => {
     [name, email, phone || null, source, status, notes || "", id],
     (err, result) => {
       if (err) {
+        console.error("❌ Database Update Error:", err.message);
         return res.status(500).json({ message: "Database error", error: err });
       }
       if (result.affectedRows === 0) {
         return res.status(404).json({ message: "Lead not found" });
       }
+      console.log(`✅ Lead ${id} updated successfully`);
       res.json({
         message: "Lead updated successfully",
         lead: { id, name, email, phone, source, status, notes },
@@ -118,15 +141,19 @@ router.put("/:id", authMiddleware, (req, res) => {
 // Delete Lead (Protected)
 router.delete("/:id", authMiddleware, (req, res) => {
   const { id } = req.params;
+  console.log(`[DELETE REQUEST] ID: ${id}`);
 
   const query = "DELETE FROM leads WHERE id = ?";
   db.query(query, [id], (err, result) => {
     if (err) {
+      console.error("❌ Database Delete Error:", err.message);
       return res.status(500).json({ message: "Database error", error: err });
     }
     if (result.affectedRows === 0) {
+      console.log(`[DELETE FAILED] No lead found with ID: ${id}`);
       return res.status(404).json({ message: "Lead not found" });
     }
+    console.log(`✅ Lead ${id} deleted successfully`);
     res.json({ message: "Lead deleted successfully" });
   });
 });

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Users, CheckCircle, TrendingUp, LogOut, RefreshCw } from "lucide-react";
+import API_BASE_URL from "../../api";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ function AdminDashboard() {
   const fetchLeads = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await axios.get("http://localhost:5002/api/leads", {
+      const res = await axios.get(`${API_BASE_URL}/leads`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -69,17 +70,6 @@ function AdminDashboard() {
     await fetchLeads();
   };
 
-  const handleDebugCheck = async () => {
-    try {
-      const res = await axios.get("http://localhost:5002/api/leads/debug/all");
-      console.log("🔍 DEBUG: Leads in database:", res.data);
-      alert(`📊 Database has ${res.data.total} leads:\n\n${JSON.stringify(res.data.leads, null, 2)}`);
-    } catch (err) {
-      console.error("Debug check error:", err);
-      alert("❌ Debug check failed: " + err.message);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex justify-center items-center">
@@ -98,13 +88,6 @@ function AdminDashboard() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-indigo-600">LeadFlow CRM Admin</h1>
           <div className="flex gap-4">
-            <button
-              onClick={handleDebugCheck}
-              className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 font-medium text-sm"
-              title="Check database directly"
-            >
-              🔍 Debug DB
-            </button>
             <button
               onClick={handleRefresh}
               disabled={refreshing}

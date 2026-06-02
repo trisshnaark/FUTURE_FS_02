@@ -9,6 +9,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  if (req.method !== 'GET') {
+    console.log('Body:', req.body);
+  }
+  next();
+});
+
 const db = mysql.createConnection({
   host: process.env.MYSQL_HOST || "localhost",
   user: process.env.MYSQL_USER || "root",
@@ -141,20 +150,25 @@ app.put("/api/leads/:id", verifyToken, (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
+  console.log(`[UPDATE REQUEST] ID: ${id}, New Status: ${status}`);
+
   if (!["new", "converted"].includes(status)) {
+    console.log(`[UPDATE REJECTED] Invalid status: ${status}`);
     return res.status(400).json({ message: "Invalid status" });
   }
 
   db.query("UPDATE leads SET status = ? WHERE id = ?", [status, id], (err, result) => {
     if (err) {
-      console.log("Update Error:", err);
+      console.error("[UPDATE DB ERROR]:", err);
       return res.status(500).json({ error: err.message });
     }
 
     if (result.affectedRows === 0) {
+      console.log(`[UPDATE FAILED] No lead found with ID: ${id}`);
       return res.status(404).json({ message: "Lead not found" });
     }
 
+    console.log(`[UPDATE SUCCESS] Lead ${id} updated to ${status}`);
     res.json({ message: "Lead updated successfully" });
   });
 });
@@ -162,17 +176,20 @@ app.put("/api/leads/:id", verifyToken, (req, res) => {
 // Delete Lead (Protected - Admin only)
 app.delete("/api/leads/:id", verifyToken, (req, res) => {
   const { id } = req.params;
+  console.log(`[DELETE REQUEST] ID: ${id}`);
 
   db.query("DELETE FROM leads WHERE id = ?", [id], (err, result) => {
     if (err) {
-      console.log("Delete Error:", err);
+      console.error("[DELETE DB ERROR]:", err);
       return res.status(500).json({ error: err.message });
     }
 
     if (result.affectedRows === 0) {
+      console.log(`[DELETE FAILED] No lead found with ID: ${id}`);
       return res.status(404).json({ message: "Lead not found" });
     }
 
+    console.log(`[DELETE SUCCESS] Lead ${id} deleted`);
     res.json({ message: "Lead deleted successfully" });
   });
 });

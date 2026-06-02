@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ArrowLeft, Edit2, Trash2, Check, RefreshCw } from "lucide-react";
+import API_BASE_URL from "../../api";
 
 function AdminLeads() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ function AdminLeads() {
   const fetchLeads = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await axios.get("http://localhost:5002/api/leads", {
+      const res = await axios.get(`${API_BASE_URL}/leads`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Ensure res.data is an array
@@ -40,7 +41,7 @@ function AdminLeads() {
     try {
       const token = localStorage.getItem("adminToken");
       await axios.put(
-        `http://localhost:5002/api/leads/${id}`,
+        `${API_BASE_URL}/leads/${id}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -56,7 +57,7 @@ function AdminLeads() {
     if (window.confirm("Are you sure you want to delete this lead?")) {
       try {
         const token = localStorage.getItem("adminToken");
-        await axios.delete(`http://localhost:5002/api/leads/${id}`, {
+        await axios.delete(`${API_BASE_URL}/leads/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         fetchLeads();

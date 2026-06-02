@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { LogIn } from "lucide-react";
+import API_BASE_URL from "../../api";
 
 function AdminLogin() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ function AdminLogin() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5002/api/admin/login",
+        `${API_BASE_URL}/admin/login`,
         credentials
       );
 

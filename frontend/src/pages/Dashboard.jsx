@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Users, CheckCircle } from "lucide-react";
+import API_BASE_URL from "../api";
 
 function Dashboard() {
 
   const [leads, setLeads] = useState([]);
 
   const fetchLeads = async () => {
-    const res = await axios.get(
-      "http://localhost:5001/api/leads"
-    );
-
-    setLeads(res.data);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await axios.get(`${API_BASE_URL}/leads`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      setLeads(res.data);
+    } catch (err) {
+      console.error("Error fetching leads:", err);
+    }
   };
 
   useEffect(() => {
@@ -19,13 +24,17 @@ function Dashboard() {
   }, []);
 
   const updateStatus = async (id, status) => {
-
-    await axios.put(
-      `http://localhost:5002/api/leads/${id}`,
-      { status }
-    );
-
-    fetchLeads();
+    try {
+      const token = localStorage.getItem("adminToken");
+      await axios.put(
+        `${API_BASE_URL}/leads/${id}`,
+        { status },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      fetchLeads();
+    } catch (err) {
+      console.error("Error updating status:", err);
+    }
   };
 
   return (
@@ -57,7 +66,7 @@ function Dashboard() {
             {
               leads.filter(
                 (lead) =>
-                  lead.status === "converted"
+                  lead.status?.toLowerCase() === "converted"
               ).length
             }
           </p>
@@ -93,17 +102,19 @@ function Dashboard() {
                 <td>{lead.status}</td>
 
                 <td>
-                  <button
-                    className="bg-green-500 text-white px-4 py-2 rounded"
-                    onClick={() =>
-                      updateStatus(
-                        lead.id,
-                        "converted"
-                      )
-                    }
-                  >
-                    Convert
-                  </button>
+                  {lead.status?.toLowerCase() !== "converted" && (
+                    <button
+                      className="bg-green-500 text-white px-4 py-2 rounded"
+                      onClick={() =>
+                        updateStatus(
+                          lead.id,
+                          "converted"
+                        )
+                      }
+                    >
+                      Convert
+                    </button>
+                  )}
                 </td>
 
               </tr>
